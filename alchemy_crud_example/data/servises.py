@@ -1,18 +1,4 @@
 from random import choice
-import sqlalchemy as sa
-
-
-def clear_db(engine):
-    meta = sa.MetaData()
-    meta.reflect(bind=engine)
-
-    with engine.connect() as conn:
-        trans = conn.begin()
-
-        for table in meta.sorted_tables:
-            conn.execute(table.delete())
-
-        trans.commit()
 
 
 def split_into_tables(purchase):

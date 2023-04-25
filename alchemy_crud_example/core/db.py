@@ -1,8 +1,10 @@
-from sqlalchemy import create_engine, select, insert, update, delete
+from sqlalchemy import (MetaData, create_engine,
+                        select, insert, update, delete)
+
 from sqlalchemy.sql import text
 from datetime import datetime
 
-from alchemy_crud_example.servises import clear_db, split_into_tables
+from alchemy_crud_example.data.servises import split_into_tables
 
 
 class DataBase:
@@ -29,7 +31,16 @@ class DataBase:
         print('core database is init')
 
     def clear_db(self):
-        clear_db(self.engine)
+        meta = MetaData()
+        meta.reflect(bind=self.engine)
+
+        with self.engine.connect() as conn:
+            trans = conn.begin()
+
+            for table in meta.sorted_tables:
+                conn.execute(table.delete())
+
+            trans.commit()
 
     def _id_search_with_insert(self, table, row, row_at_creating=None):
         table_name = str(table.name)

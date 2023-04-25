@@ -1,7 +1,7 @@
 from alchemy_crud_example.repository import Repository
 from alchemy_crud_example.data.fake_data import fake_data
 
-from alchemy_crud_example.servises import (
+from alchemy_crud_example.data.servises import (
     random_order, random_update, print_purchase
 )
 
