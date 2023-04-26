@@ -1,11 +1,10 @@
-from sqlalchemy import MetaData, create_engine, and_
+from sqlalchemy import create_engine, and_
 from sqlalchemy.orm import sessionmaker
-from datetime import datetime
 
-from alchemy_crud_example.data.servises import split_into_tables
+from alchemy_crud_example.core.db import DataBase as CoreDataBase
 
 
-class DataBase:
+class DataBase(CoreDataBase):
     def __init__(self, database_name):
         self.engine = create_engine(
             f'sqlite:///{database_name}',
@@ -21,24 +20,12 @@ class DataBase:
 
         self.Session = sessionmaker(bind=self.engine)
 
-        self.Customer = Customer
-        self.Order = Order
-        self.OrderLine = OrderLine
-        self.Item = Item
+        self.customers = Customer
+        self.orders = Order
+        self.order_lines = OrderLine
+        self.items = Item
 
         print('orm database is init')
-
-    def clear_db(self):
-        meta = MetaData()
-        meta.reflect(bind=self.engine)
-
-        with self.engine.connect() as conn:
-            trans = conn.begin()
-
-            for table in meta.sorted_tables:
-                conn.execute(table.delete())
-
-            trans.commit()
 
     def _id_search_with_insert(self, model, row, row_at_creating=None):
         with self.Session() as session:
@@ -59,31 +46,13 @@ class DataBase:
 
             return row_id
 
-    def _purchase_without_items_and_customer(self, purchase):
-        customer_row, orders_row, \
-            order_lines_row, items_row = split_into_tables(purchase)
-
-        items_id = self._id_search_with_insert(self.Item, items_row)
-
-        order_lines_row['item_id'] = items_id
-
-        customer_id = self._id_search_with_insert(self.Customer, customer_row)
-
-        orders_row['customer_id'] = customer_id
-        orders_row['date_placed'] = datetime.now()
-        date_for_orders_row = {'date_placed': orders_row.pop('date_placed')}
-
-        return (order_lines_row,
-                orders_row,
-                date_for_orders_row)
-
     def create(self, purchase):
         (order_lines_row,
          orders_row,
          date_for_orders_row) = self._purchase_without_items_and_customer(purchase)
 
         orders_id = self._id_search_with_insert(
-            self.Order,
+            self.orders,
             orders_row,
             date_for_orders_row
         )
@@ -91,7 +60,7 @@ class DataBase:
         order_lines_row['order_id'] = orders_id
 
         order_lines_id = self._id_search_with_insert(
-            self.OrderLine,
+            self.order_lines,
             order_lines_row
         )
 
@@ -101,24 +70,24 @@ class DataBase:
         rows = []
         with self.Session() as session:
             rs = session.query(
-                self.Customer.first_name,
-                self.Customer.last_name,
-                self.Customer.username,
-                self.Customer.email,
-                self.Customer.address,
-                self.Customer.town,
-                self.Item.name.label('item'),
-                self.Item.cost_price,
-                self.Item.selling_price,
-                self.Order.number,
-                self.OrderLine.id.label('purchase_id'),
-                self.OrderLine.quantity
+                self.customers.first_name,
+                self.customers.last_name,
+                self.customers.username,
+                self.customers.email,
+                self.customers.address,
+                self.customers.town,
+                self.items.name.label('item'),
+                self.items.cost_price,
+                self.items.selling_price,
+                self.orders.number,
+                self.order_lines.id.label('purchase_id'),
+                self.order_lines.quantity
             ) \
-                .select_from(self.Customer) \
-                .join(self.Order) \
-                .join(self.OrderLine) \
-                .join(self.Item) \
-                .filter(self.Order.number == int(order_number)) \
+                .select_from(self.customers) \
+                .join(self.orders) \
+                .join(self.order_lines) \
+                .join(self.items) \
+                .filter(self.orders.number == int(order_number)) \
                 .all()
 
         for row in rs:
@@ -129,17 +98,17 @@ class DataBase:
     def delete(self, order_number):
         with self.Session() as session:
             with session.begin():
-                rs = session.query(self.Order.id). \
-                    filter(self.Order.number == int(order_number)).first()
+                rs = session.query(self.orders.id). \
+                    filter(self.orders.number == int(order_number)).first()
 
                 order_id = rs[0]
 
-                session.query(self.OrderLine) \
-                    .where(self.OrderLine.order_id == int(order_id))\
+                session.query(self.order_lines) \
+                    .where(self.order_lines.order_id == int(order_id)) \
                     .delete(synchronize_session=False)
 
-                session.query(self.Order) \
-                    .where(self.Order.id == int(order_id))\
+                session.query(self.orders) \
+                    .where(self.orders.id == int(order_id)) \
                     .delete(synchronize_session=False)
 
     def update(self, new_purchase):
@@ -148,17 +117,17 @@ class DataBase:
 
         with self.Session() as session:
             with session.begin():
-                rs = session.query(self.OrderLine.order_id). \
-                    filter(self.OrderLine.id == int(new_purchase["purchase_id"])).first()
+                rs = session.query(self.order_lines.order_id). \
+                    filter(self.order_lines.id == int(new_purchase["purchase_id"])).first()
 
                 order_id = rs[0]
 
                 order_lines_row['order_id'] = order_id
 
-                session.query(self.Order)\
-                    .filter(self.Order.id == int(order_id))\
+                session.query(self.orders) \
+                    .filter(self.orders.id == int(order_id)) \
                     .update(orders_row, synchronize_session=False)
 
-                session.query(self.OrderLine)\
-                    .filter(self.OrderLine.id == int(new_purchase["purchase_id"]))\
+                session.query(self.order_lines) \
+                    .filter(self.order_lines.id == int(new_purchase["purchase_id"])) \
                     .update(order_lines_row, synchronize_session=False)

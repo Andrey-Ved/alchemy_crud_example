@@ -1,34 +1,6 @@
 from random import choice
 
 
-def split_into_tables(purchase):
-    customer_row = {
-        'first_name': purchase['first_name'],
-        'last_name': purchase['last_name'],
-        'username': purchase['username'],
-        'email': purchase['email'],
-        'address': purchase['address'],
-        'town': purchase['town']
-    }
-
-    items_row = {
-        'name': purchase['item'],
-        'cost_price': purchase['cost_price'],
-        'selling_price': purchase['selling_price']
-    }
-
-    orders_row = {
-        'number': purchase['order'],
-    }
-
-    order_lines_row = {
-        'id': purchase['purchase_id'],
-        'quantity': purchase['quantity']
-    }
-
-    return customer_row, orders_row, order_lines_row, items_row
-
-
 def random_order(data):
     orders = set()
 

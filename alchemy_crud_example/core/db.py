@@ -4,8 +4,6 @@ from sqlalchemy import (MetaData, create_engine,
 from sqlalchemy.sql import text
 from datetime import datetime
 
-from alchemy_crud_example.data.servises import split_into_tables
-
 
 class DataBase:
     def __init__(self, database_name):
@@ -29,6 +27,34 @@ class DataBase:
         self.items = items
 
         print('core database is init')
+
+    @staticmethod
+    def split_into_tables(purchase):
+        customer_row = {
+            'first_name': purchase['first_name'],
+            'last_name': purchase['last_name'],
+            'username': purchase['username'],
+            'email': purchase['email'],
+            'address': purchase['address'],
+            'town': purchase['town']
+        }
+
+        items_row = {
+            'name': purchase['item'],
+            'cost_price': purchase['cost_price'],
+            'selling_price': purchase['selling_price']
+        }
+
+        orders_row = {
+            'number': purchase['order'],
+        }
+
+        order_lines_row = {
+            'id': purchase['purchase_id'],
+            'quantity': purchase['quantity']
+        }
+
+        return customer_row, orders_row, order_lines_row, items_row
 
     def clear_db(self):
         meta = MetaData()
@@ -73,7 +99,7 @@ class DataBase:
 
     def _purchase_without_items_and_customer(self, purchase):
         customer_row, orders_row, \
-            order_lines_row, items_row = split_into_tables(purchase)
+            order_lines_row, items_row = self.split_into_tables(purchase)
 
         items_id = self._id_search_with_insert(self.items, items_row)
 
