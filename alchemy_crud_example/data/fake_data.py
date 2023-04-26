@@ -26,7 +26,7 @@ def fake_data():
     return data_list
 
 
-def show_fake_data():
+def _show_fake_data():
     data_list = fake_data()
 
     for i in data_list:
@@ -34,4 +34,4 @@ def show_fake_data():
 
 
 if __name__ == '__main__':
-    show_fake_data()
+    _show_fake_data()
