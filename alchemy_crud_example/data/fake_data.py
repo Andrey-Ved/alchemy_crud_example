@@ -6,13 +6,17 @@ def fake_data():
     data_list = []
     orders_count = 0
     purchase_count = 0
+
     for id, customer in enumerate(customers_list):
         for borders in (1, 2), (0, 3), (0,2):
             orders_count += 1
+
             shuffle(items_list)
-            orders1_lines_number = randint(*borders)
-            for item in range(orders1_lines_number):
+            orders_lines_number = randint(*borders)
+
+            for item in range(orders_lines_number):
                 purchase_count += 1
+
                 row = customer.copy()
                 row['id'] = id
                 row['order'] = orders_count
@@ -21,6 +25,7 @@ def fake_data():
                 row["selling_price"] = items_list[item]["selling_price"]
                 row["quantity"] = randint(1, 20)
                 row["purchase_id"] = purchase_count
+
                 data_list.append(row)
 
     return data_list
